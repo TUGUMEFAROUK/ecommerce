@@ -10,6 +10,17 @@ use Illuminate\Validation\Rule;
 class AdminProductRequest extends FormRequest
 {
     /**
+     * Slugs that would shadow a static admin route.
+     *
+     * The admin product routes register `products/create` alongside
+     * `products/{product}`, so a product whose slug is "create" could
+     * never be opened from the admin panel: the static route always wins.
+     *
+     * @var list<string>
+     */
+    public const RESERVED_SLUGS = ['create'];
+
+    /**
      * Determine if the user is authorized to make this request.
      *
      * Admin-only form request: the route middleware enforces this too, but
@@ -35,6 +46,7 @@ class AdminProductRequest extends FormRequest
                 'string',
                 'max:255',
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::notIn(self::RESERVED_SLUGS),
                 Rule::unique('products', 'slug')->ignore($this->route('product')),
             ],
             'description' => ['nullable', 'string', 'max:10000'],

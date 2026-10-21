@@ -68,32 +68,35 @@
             </div>
         @endif
 
-        <table class="mt-6 w-full text-left text-sm">
-            <thead class="border-b border-gray-200 text-gray-600">
-                <tr>
-                    <th class="py-2 pr-4 font-medium">Product</th>
-                    <th class="py-2 pr-4 font-medium">Unit price</th>
-                    <th class="py-2 pr-4 font-medium">Quantity</th>
-                    <th class="py-2 font-medium">Line total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($order->items as $item)
-                    <tr class="border-b border-gray-100">
-                        <td class="py-2 pr-4">{{ $item->product_name }}</td>
-                        <td class="py-2 pr-4">{{ $order->currency }} {{ number_format((float) $item->unit_price, 2) }}</td>
-                        <td class="py-2 pr-4">{{ $item->quantity }}</td>
-                        <td class="py-2">{{ $order->currency }} {{ number_format((float) $item->line_total, 2) }}</td>
+        <div class="overflow-x-auto">
+            <table class="mt-6 w-full min-w-[640px] text-left text-sm">
+                <caption class="sr-only">Ordered items</caption>
+                <thead class="border-b border-gray-200 text-gray-600">
+                    <tr>
+                        <th scope="col" class="py-2 pr-4 font-medium">Product</th>
+                        <th scope="col" class="py-2 pr-4 font-medium">Unit price</th>
+                        <th scope="col" class="py-2 pr-4 font-medium">Quantity</th>
+                        <th scope="col" class="py-2 font-medium">Line total</th>
                     </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="3" class="py-3 pr-4 text-right font-semibold">Total</td>
-                    <td class="py-3 font-semibold">{{ $order->currency }} {{ number_format((float) $order->total, 2) }}</td>
-                </tr>
-            </tfoot>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach ($order->items as $item)
+                        <tr class="border-b border-gray-100">
+                            <th scope="row" class="py-2 pr-4 font-medium text-gray-900">{{ $item->product_name }}</th>
+                            <td class="py-2 pr-4">{{ $order->currency }} {{ number_format((float) $item->unit_price, 2) }}</td>
+                            <td class="py-2 pr-4">{{ $item->quantity }}</td>
+                            <td class="py-2">{{ $order->currency }} {{ number_format((float) $item->line_total, 2) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th scope="row" colspan="3" class="py-3 pr-4 text-right font-semibold">Total</th>
+                        <td class="py-3 font-semibold">{{ $order->currency }} {{ number_format((float) $order->total, 2) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
 
         <div class="mt-6 grid gap-4 border-t border-gray-200 pt-6 text-sm sm:grid-cols-2">
             <div>

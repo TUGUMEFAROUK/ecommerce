@@ -2,6 +2,7 @@
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\UserRole;
 use App\Models\Address;
 use App\Models\Category;
 use App\Models\Order;
@@ -10,6 +11,8 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\User;
+use App\Services\AdminUserService;
+use Database\Seeders\AdminUserSeeder;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoDataSeeder;
 
@@ -92,6 +95,42 @@ test('the database seeder creates demo accounts and calls the demo data outside 
     (new DatabaseSeeder)->run();
 
     expect(User::query()->where('email', 'test@example.com')->exists())->toBeTrue()
-        ->and(User::query()->where('email', 'admin@example.com')->first()->isAdmin())->toBeTrue()
         ->and(Product::query()->count())->toBeGreaterThan(0);
 });
+
+test('the database seeder never leaves a default administrator behind', function () {
+    (new DatabaseSeeder)->run();
+
+    expect(User::query()->where('email', 'admin@example.com')->exists())->toBeFalse()
+        ->and(User::query()->where('role', UserRole::Admin)->count())->toBe(0);
+});
+
+test('the admin seeder creates an administrator from the environment', function () {
+    $_ENV['ADMIN_EMAIL'] = 'owner@example.com';
+    $_ENV['ADMIN_NAME'] = 'Store Owner';
+    $_ENV['ADMIN_PASSWORD'] = 'correct-horse-battery-staple';
+
+    try {
+        (new AdminUserSeeder)->run(app(AdminUserService::class));
+    } finally {
+        unset($_ENV['ADMIN_EMAIL'], $_ENV['ADMIN_NAME'], $_ENV['ADMIN_PASSWORD']);
+    }
+
+    $user = User::query()->where('email', 'owner@example.com')->firstOrFail();
+
+    expect($user->isAdmin())->toBeTrue()
+        ->and($user->name)->toBe('Store Owner');
+});
+
+test('the admin seeder refuses to run without a password', function () {
+    $_ENV['ADMIN_EMAIL'] = 'owner@example.com';
+    $_ENV['ADMIN_PASSWORD'] = '';
+
+    try {
+        (new AdminUserSeeder)->run(app(AdminUserService::class));
+    } finally {
+        unset($_ENV['ADMIN_EMAIL'], $_ENV['ADMIN_PASSWORD']);
+    }
+
+    expect(User::query()->where('email', 'owner@example.com')->exists())->toBeFalse();
+})->throws(RuntimeException::class);

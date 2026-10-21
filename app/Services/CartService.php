@@ -56,10 +56,21 @@ class CartService
 
     /**
      * Total item quantity across all cart lines.
+     *
+     * The badge only needs a number, so the count is aggregated in the
+     * database instead of hydrating every cart item and product model.
      */
     public function count(?User $user): int
     {
-        return (int) $this->lines($user)->sum(fn (array $line): int => $line['quantity']);
+        if ($user === null) {
+            return $this->sessionCount();
+        }
+
+        return (int) CartItem::query()
+            ->whereIn('cart_id', Cart::query()
+                ->where('user_id', $user->getKey())
+                ->select('id'))
+            ->sum('quantity');
     }
 
     /**
@@ -297,6 +308,35 @@ class CartService
                 : null)
             ->filter()
             ->values();
+    }
+
+    /**
+     * Total quantity of a guest's session cart, ignoring lines whose
+     * product no longer exists.
+     */
+    private function sessionCount(): int
+    {
+        $session = $this->sessionCart();
+
+        if ($session === []) {
+            return 0;
+        }
+
+        $available = Product::query()
+            ->whereIn('id', array_keys($session))
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $total = 0;
+
+        foreach ($session as $productId => $quantity) {
+            if (in_array((int) $productId, $available, true)) {
+                $total += (int) $quantity;
+            }
+        }
+
+        return $total;
     }
 
     /**

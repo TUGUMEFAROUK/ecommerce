@@ -11,6 +11,7 @@ use App\Services\InventoryService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -120,8 +121,11 @@ class ProductController extends Controller
                 'Product form',
             );
 
+            // The stock level was already written by the inventory service,
+            // which also recorded the movement. Excluding it here keeps a
+            // single source of truth for the quantity.
             $product->update([
-                ...$validated,
+                ...Arr::except($validated, ['stock_quantity']),
                 'featured' => $request->boolean('featured'),
             ]);
         });

@@ -95,32 +95,39 @@
             @if ($orders->isEmpty())
                 <p class="text-sm text-gray-600">You have not placed any orders yet.</p>
             @else
-                <table class="w-full text-left text-sm">
-                    <thead class="border-b border-gray-200 text-gray-600">
-                        <tr>
-                            <th class="py-2 pr-4 font-medium">Order</th>
-                            <th class="py-2 pr-4 font-medium">Date</th>
-                            <th class="py-2 pr-4 font-medium">Status</th>
-                            <th class="py-2 pr-4 font-medium">Total</th>
-                            <th class="py-2 font-medium"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($orders as $order)
-                            <tr class="border-b border-gray-100">
-                                <td class="py-2 pr-4">#{{ $order->id }}</td>
-                                <td class="py-2 pr-4">{{ $order->created_at?->format('M j, Y') }}</td>
-                                <td class="py-2 pr-4 capitalize">{{ $order->status->value }}</td>
-                                <td class="py-2 pr-4">{{ $order->currency }} {{ number_format((float) $order->total, 2) }}</td>
-                                <td class="py-2">
-                                    <a href="{{ route('account.orders.show', $order) }}" class="text-gray-900 underline">
-                                        View
-                                    </a>
-                                </td>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[640px] text-left text-sm">
+                        <caption class="sr-only">Order history</caption>
+                        <thead class="border-b border-gray-200 text-gray-600">
+                            <tr>
+                                <th scope="col" class="py-2 pr-4 font-medium">Order</th>
+                                <th scope="col" class="py-2 pr-4 font-medium">Date</th>
+                                <th scope="col" class="py-2 pr-4 font-medium">Status</th>
+                                <th scope="col" class="py-2 pr-4 font-medium">Total</th>
+                                <th scope="col" class="py-2 font-medium"><span class="sr-only">Actions</span></th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach ($orders as $order)
+                                <tr class="border-b border-gray-100">
+                                    <th scope="row" class="py-2 pr-4 font-medium text-gray-900">#{{ $order->id }}</th>
+                                    <td class="py-2 pr-4">{{ $order->created_at?->format('M j, Y') }}</td>
+                                    <td class="py-2 pr-4 capitalize">{{ $order->status->value }}</td>
+                                    <td class="py-2 pr-4">{{ $order->currency }} {{ number_format((float) $order->total, 2) }}</td>
+                                    <td class="py-2">
+                                        <a href="{{ route('account.orders.show', $order) }}" class="text-gray-900 underline">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4">
+                    {{ $orders->links() }}
+                </div>
             @endif
         </div>
     </div>

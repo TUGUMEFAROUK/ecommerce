@@ -68,9 +68,8 @@ class Product extends Model
      * Scope the query to products visible in the storefront.
      *
      * @param  Builder<Product>  $query
-     * @return Builder<Product>
      */
-    public function scopeActive($query)
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ProductStatus::Active);
     }
@@ -79,9 +78,8 @@ class Product extends Model
      * Scope the query to products flagged for the homepage.
      *
      * @param  Builder<Product>  $query
-     * @return Builder<Product>
      */
-    public function scopeFeatured($query)
+    public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('featured', true);
     }

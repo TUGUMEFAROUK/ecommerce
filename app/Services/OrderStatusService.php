@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -45,6 +46,10 @@ class OrderStatusService
      * a validation error and leave the order untouched. The actor is
      * optional: webhook-driven transitions have no human behind them and
      * are recorded as system changes.
+     *
+     * Cancelling an order returns its reserved stock to the products it
+     * was placed for, so a cancelled order never keeps inventory out of
+     * the store. Every returned unit is written as an auditable movement.
      */
     public function transition(Order $order, OrderStatus $to, ?string $notes, ?User $actor = null): Order
     {
@@ -75,8 +80,44 @@ class OrderStatusService
                 'to_status' => $to->value,
                 'notes' => $notes,
             ]);
+
+            if ($to === OrderStatus::Cancelled) {
+                $this->restoreStock($order, $actor);
+            }
         });
 
         return $order;
+    }
+
+    /**
+     * Return the units reserved by a cancelled order to their products.
+     *
+     * The products are re-read under a row lock so a concurrent order
+     * cannot cause the same unit to be handed out twice.
+     */
+    private function restoreStock(Order $order, ?User $actor): void
+    {
+        $inventory = app(InventoryService::class);
+
+        foreach ($order->items()->get() as $item) {
+            if ($item->product_id === null) {
+                continue;
+            }
+
+            $product = Product::query()
+                ->lockForUpdate()
+                ->find($item->product_id);
+
+            if ($product === null) {
+                continue;
+            }
+
+            $inventory->adjustStock(
+                $product,
+                (int) $product->stock_quantity + (int) $item->quantity,
+                $actor?->getKey(),
+                sprintf('Order #%d cancelled', $order->getKey()),
+            );
+        }
     }
 }

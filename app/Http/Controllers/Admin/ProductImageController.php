@@ -9,6 +9,7 @@ use App\Models\ProductImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ProductImageController extends Controller
 {
@@ -20,7 +21,7 @@ class ProductImageController extends Controller
      */
     public function store(AdminProductImageRequest $request, Product $product): RedirectResponse
     {
-        $path = $request->file('image')->store('products', 'public');
+        $path = $this->storeUpload($request);
 
         $hasImages = $product->images()->exists();
 
@@ -44,7 +45,7 @@ class ProductImageController extends Controller
     {
         $oldPath = $image->path;
 
-        $newPath = $request->file('image')->store('products', 'public');
+        $newPath = $this->storeUpload($request);
 
         $image->update(['path' => $newPath]);
 
@@ -76,5 +77,27 @@ class ProductImageController extends Controller
         }
 
         return back()->with('status', 'Image removed.');
+    }
+
+    /**
+     * Write the uploaded file to the public disk.
+     *
+     * `store()` reports a failure by returning false rather than throwing,
+     * so the result is checked before it is written to the database: a
+     * record must never point at a file that was never saved.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function storeUpload(AdminProductImageRequest $request): string
+    {
+        $path = $request->file('image')->store('products', 'public');
+
+        if (! is_string($path) || $path === '') {
+            throw ValidationException::withMessages([
+                'image' => 'The image could not be saved. Please try again.',
+            ]);
+        }
+
+        return $path;
     }
 }

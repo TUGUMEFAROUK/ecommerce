@@ -11,6 +11,17 @@ use Illuminate\Validation\Validator;
 class AdminCategoryRequest extends FormRequest
 {
     /**
+     * Slugs that would shadow a static admin route.
+     *
+     * The admin category routes register `categories/create` alongside
+     * `categories/{category}`, so a category whose slug is "create" could
+     * never be opened from the admin panel: the static route always wins.
+     *
+     * @var list<string>
+     */
+    public const RESERVED_SLUGS = ['create'];
+
+    /**
      * Determine if the user is authorized to make this request.
      *
      * Admin-only form request: the route middleware enforces this too, but
@@ -41,6 +52,7 @@ class AdminCategoryRequest extends FormRequest
                 'string',
                 'max:255',
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::notIn(self::RESERVED_SLUGS),
                 Rule::unique('categories', 'slug')->ignore($this->route('category')),
             ],
             'parent_id' => ['nullable', 'integer', $parentRule],

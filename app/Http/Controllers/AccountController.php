@@ -10,13 +10,21 @@ use Illuminate\View\View;
 class AccountController extends Controller
 {
     /**
+     * The number of orders shown per page on the account dashboard.
+     */
+    private const ORDERS_PER_PAGE = 10;
+
+    /**
      * Display the customer's account dashboard.
      */
     public function show(Request $request): View
     {
         return view('account.show', [
             'user' => $request->user(),
-            'orders' => $request->user()->orders()->latest()->get(),
+            'orders' => $request->user()
+                ->orders()
+                ->latest()
+                ->paginate(self::ORDERS_PER_PAGE),
         ]);
     }
 

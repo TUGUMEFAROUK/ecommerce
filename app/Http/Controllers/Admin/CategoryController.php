@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminCategoryRequest;
 use App\Models\Category;
+use App\Providers\AppServiceProvider;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -45,6 +47,8 @@ class CategoryController extends Controller
     {
         $category = Category::create($request->validated());
 
+        $this->forgetNavigationCache();
+
         return redirect()
             ->route('admin.categories.index')
             ->with('status', 'Category created.');
@@ -67,6 +71,8 @@ class CategoryController extends Controller
     public function update(AdminCategoryRequest $request, Category $category): RedirectResponse
     {
         $category->update($request->validated());
+
+        $this->forgetNavigationCache();
 
         return redirect()
             ->route('admin.categories.index')
@@ -91,9 +97,19 @@ class CategoryController extends Controller
 
         $category->delete();
 
+        $this->forgetNavigationCache();
+
         return redirect()
             ->route('admin.categories.index')
             ->with('status', 'Category deleted.');
+    }
+
+    /**
+     * Drop the cached storefront navigation so the change is visible at once.
+     */
+    private function forgetNavigationCache(): void
+    {
+        Cache::forget(AppServiceProvider::NAVIGATION_CATEGORIES_CACHE_KEY);
     }
 
     /**

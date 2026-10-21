@@ -1,14 +1,17 @@
 @props(['product'])
 
 @php
+    use Illuminate\Support\Facades\Storage;
+
+    $disk = Storage::disk('public');
     $image = $product->images->first();
-    $hasImage = $image !== null && \Illuminate\Support\Facades\Storage::disk('public')->exists($image->path);
+    $hasImage = $image !== null && $disk->exists($image->path);
 @endphp
 
 <div {{ $attributes->merge(['class' => 'overflow-hidden bg-gray-100']) }}>
     @if ($hasImage)
         <img
-            src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($image->path) }}"
+            src="{{ $disk->url($image->path) }}"
             alt="{{ $product->name }}"
             loading="lazy"
             class="h-full w-full object-cover"
