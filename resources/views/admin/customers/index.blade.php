@@ -1,13 +1,14 @@
 <x-layouts.admin title="Customers">
-    <x-admin.page-header title="Customers" />
+    <x-admin.page-header title="Customers" description="Registered customer accounts and their order history." />
 
     <form
         method="GET"
         action="{{ route('admin.customers.index') }}"
-        class="mb-6 flex flex-wrap items-end gap-3 rounded border border-gray-200 bg-white p-4"
+        class="admin-card mb-6 flex flex-wrap items-end gap-3 p-4"
+        role="search"
     >
         <div class="min-w-48 flex-1">
-            <label for="filter-search" class="mb-1 block text-sm font-medium text-gray-700">Search</label>
+            <label for="filter-search" class="admin-label">Search</label>
             <input
                 id="filter-search"
                 type="search"
@@ -15,49 +16,45 @@
                 value="{{ request('search') }}"
                 maxlength="100"
                 placeholder="Name or email"
-                class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                class="admin-field"
             >
         </div>
 
-        <div class="flex gap-2">
-            <button type="submit" class="rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700">
-                Search
-            </button>
-            <a href="{{ route('admin.customers.index') }}" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                Reset
-            </a>
+        <div class="flex items-center gap-2">
+            <x-admin.button type="submit">Search</x-admin.button>
+            <x-admin.button variant="secondary" :href="route('admin.customers.index')">Reset</x-admin.button>
         </div>
     </form>
 
     @if ($customers->isEmpty())
-        <x-empty-state
+        <x-admin.empty-state
             title="No customers found"
             message="Registered customer accounts appear here after they sign up."
         />
     @else
-        <div class="overflow-x-auto rounded border border-gray-200 bg-white">
+        <div class="admin-table-wrap">
             <table class="w-full text-left text-sm">
-                <thead class="border-b border-gray-200 text-gray-600">
-                    <tr>
-                        <th class="px-4 py-3 font-medium">Customer</th>
-                        <th class="px-4 py-3 font-medium">Joined</th>
-                        <th class="px-4 py-3 font-medium">Orders</th>
-                        <th class="px-4 py-3 text-right font-medium">Actions</th>
+                <thead>
+                    <tr class="border-b border-slate-100">
+                        <th class="admin-th">Customer</th>
+                        <th class="admin-th">Joined</th>
+                        <th class="admin-th">Orders</th>
+                        <th class="admin-th text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($customers as $customer)
-                        <tr class="border-b border-gray-100 last:border-0">
-                            <td class="px-4 py-3">
-                                <span class="font-medium text-gray-900">{{ $customer->name }}</span>
-                                <p class="text-xs text-gray-500">{{ $customer->email }}</p>
+                        <tr class="admin-row">
+                            <td class="admin-td">
+                                <span class="block font-medium text-slate-900">{{ $customer->name }}</span>
+                                <span class="block text-xs text-slate-500">{{ $customer->email }}</span>
                             </td>
-                            <td class="px-4 py-3 text-gray-600">{{ $customer->created_at?->format('M j, Y') }}</td>
-                            <td class="px-4 py-3">{{ $customer->orders_count }}</td>
-                            <td class="px-4 py-3 text-right">
-                                <a href="{{ route('admin.customers.show', $customer) }}" class="text-sm text-gray-700 hover:text-gray-900 hover:underline">
-                                    View
-                                </a>
+                            <td class="admin-td whitespace-nowrap">{{ $customer->created_at?->format('M j, Y') }}</td>
+                            <td class="admin-td">{{ number_format($customer->orders_count) }}</td>
+                            <td class="admin-td">
+                                <div class="flex items-center justify-end">
+                                    <a href="{{ route('admin.customers.show', $customer) }}" class="admin-btn admin-btn-secondary admin-btn-sm">View</a>
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -65,8 +62,6 @@
             </table>
         </div>
 
-        <div class="mt-4">
-            {{ $customers->links() }}
-        </div>
+        {{ $customers->links('components.admin.pagination') }}
     @endif
 </x-layouts.admin>

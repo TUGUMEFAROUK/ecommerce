@@ -8,6 +8,7 @@ use App\Http\Requests\AdminProductRequest;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\InventoryService;
+use App\Services\ProductImageService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +24,7 @@ class ProductController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Product::query()->with('category')->latest();
+        $query = Product::query()->with(['category', 'images'])->latest();
 
         $search = trim((string) $request->query('search'));
 
@@ -65,13 +66,27 @@ class ProductController extends Controller
 
     /**
      * Persist a new product.
+     *
+     * An uploaded image is stored as the product's primary image right
+     * after the product row is written, so the storefront never shows a
+     * product that was created without its picture.
      */
-    public function store(AdminProductRequest $request): RedirectResponse
+    public function store(AdminProductRequest $request, ProductImageService $images): RedirectResponse
     {
+        $validated = $request->validated();
+
+        if (array_key_exists('sale_price', $validated) && $validated['sale_price'] === '') {
+            $validated['sale_price'] = null;
+        }
+
         $product = Product::create([
-            ...$request->validated(),
+            ...$validated,
             'featured' => $request->boolean('featured'),
         ]);
+
+        if ($request->hasFile('image_upload')) {
+            $images->store($product, $request->file('image_upload'), asPrimary: true);
+        }
 
         return redirect()
             ->route('admin.products.show', $product)
@@ -94,7 +109,7 @@ class ProductController extends Controller
     public function edit(Product $product): View
     {
         return view('admin.products.edit', [
-            'product' => $product,
+            'product' => $product->load('images'),
             'categories' => $this->categories(),
             'statuses' => ProductStatus::cases(),
         ]);
@@ -109,11 +124,11 @@ class ProductController extends Controller
      * stored value — and both writes share one transaction so a failure
      * can never leave a half-applied edit.
      */
-    public function update(AdminProductRequest $request, Product $product, InventoryService $inventory): RedirectResponse
+    public function update(AdminProductRequest $request, Product $product, InventoryService $inventory, ProductImageService $images): RedirectResponse
     {
         $validated = $request->validated();
 
-        DB::transaction(function () use ($request, $product, $validated, $inventory): void {
+        DB::transaction(function () use ($request, $product, $validated, $inventory, $images): void {
             $inventory->adjustStock(
                 $product,
                 (int) $validated['stock_quantity'],
@@ -121,13 +136,23 @@ class ProductController extends Controller
                 'Product form',
             );
 
+            $updateData = Arr::except($validated, ['stock_quantity', 'image_upload']);
+
+            if (array_key_exists('sale_price', $updateData) && $updateData['sale_price'] === '') {
+                $updateData['sale_price'] = null;
+            }
+
             // The stock level was already written by the inventory service,
             // which also recorded the movement. Excluding it here keeps a
             // single source of truth for the quantity.
             $product->update([
-                ...Arr::except($validated, ['stock_quantity']),
+                ...$updateData,
                 'featured' => $request->boolean('featured'),
             ]);
+
+            if ($request->hasFile('image_upload')) {
+                $images->store($product, $request->file('image_upload'), asPrimary: true);
+            }
         });
 
         return redirect()

@@ -1,51 +1,60 @@
 <x-layouts.admin :title="$customer->name">
-    <x-admin.page-header :title="$customer->name">
-        <a href="{{ route('admin.customers.index') }}" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-            Back to customers
-        </a>
+    <x-admin.page-header :title="$customer->name" :description="$customer->email">
+        <x-admin.button variant="secondary" :href="route('admin.customers.index')">Back to customers</x-admin.button>
     </x-admin.page-header>
 
-    <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <x-admin.stat-card label="Email" :value="$customer->email" />
-        <x-admin.stat-card label="Joined" :value="$customer->created_at?->format('M j, Y') ?? '—'" />
-        <x-admin.stat-card label="Orders" :value="$orderCount" />
+    @php($currency = app(\App\Services\SettingsService::class)->get('store_currency'))
+
+    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <x-admin.stat-card label="Email" :value="$customer->email" icon="users" />
+        <x-admin.stat-card label="Joined" :value="$customer->created_at?->format('M j, Y') ?? '—'" icon="calendar" />
+        <x-admin.stat-card label="Orders" :value="number_format($orderCount)" icon="orders" />
         <x-admin.stat-card
             label="Total spent"
-            :value="app(\App\Services\SettingsService::class)->get('store_currency').' '.number_format($totalSpent, 2)"
+            :value="\App\Support\Money::formatWithCode($totalSpent, $currency)"
+            icon="currency"
             meta="Recognized sales only"
         />
     </div>
 
-    <section class="rounded border border-gray-200 bg-white p-6">
-        <div class="mb-4 flex items-center justify-between">
-            <h2 class="text-lg font-semibold">Recent orders</h2>
-            <a href="{{ route('admin.orders.index', ['search' => $customer->email]) }}" class="text-sm text-gray-600 underline hover:text-gray-900">
+    <section class="admin-card">
+        <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div>
+                <h2 class="text-base font-semibold text-slate-900">Recent orders</h2>
+                <p class="text-sm text-slate-500">The latest orders placed by this customer.</p>
+            </div>
+            <a href="{{ route('admin.orders.index', ['search' => $customer->email]) }}" class="text-sm font-medium text-slate-600 hover:text-slate-900">
                 Search all orders
             </a>
         </div>
 
         @if ($orders->isEmpty())
-            <p class="text-sm text-gray-600">This customer has not placed any orders yet.</p>
+            <x-admin.empty-state
+                title="No orders yet"
+                message="This customer has not placed any orders yet."
+            />
         @else
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
-                    <thead class="border-b border-gray-200 text-gray-600">
-                        <tr>
-                            <th class="py-2 pr-4 font-medium">Order</th>
-                            <th class="py-2 pr-4 font-medium">Date</th>
-                            <th class="py-2 pr-4 font-medium">Status</th>
-                            <th class="py-2 text-right font-medium">Total</th>
+                    <thead>
+                        <tr class="border-b border-slate-100">
+                            <th class="admin-th">Order</th>
+                            <th class="admin-th">Date</th>
+                            <th class="admin-th">Status</th>
+                            <th class="admin-th text-right">Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($orders as $order)
-                            <tr class="border-b border-gray-100 last:border-0">
-                                <td class="py-2 pr-4">
-                                    <a href="{{ route('admin.orders.show', $order) }}" class="hover:underline">#{{ $order->id }}</a>
+                            <tr class="admin-row">
+                                <td class="admin-td">
+                                    <a href="{{ route('admin.orders.show', $order) }}" class="font-medium text-slate-900 hover:underline">#{{ $order->id }}</a>
                                 </td>
-                                <td class="py-2 pr-4 text-gray-600">{{ $order->created_at?->format('M j, Y') }}</td>
-                                <td class="py-2 pr-4 capitalize">{{ $order->status->value }}</td>
-                                <td class="py-2 text-right">{{ $order->currency }} {{ number_format((float) $order->total, 2) }}</td>
+                                <td class="admin-td whitespace-nowrap">{{ $order->created_at?->format('M j, Y') }}</td>
+                                <td class="admin-td">
+                                    <x-admin.status-badge :status="$order->status" />
+                                </td>
+                                <td class="admin-td whitespace-nowrap text-right font-medium text-slate-900">{{ \App\Support\Money::formatWithCode($order->total, $order->currency) }}</td>
                             </tr>
                         @endforeach
                     </tbody>

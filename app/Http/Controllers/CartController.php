@@ -6,6 +6,7 @@ use App\Enums\ProductStatus;
 use App\Models\Product;
 use App\Services\CartPricingService;
 use App\Services\CartService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -25,7 +26,7 @@ class CartController extends Controller
             'quote' => $pricing->quote($lines),
             'lineTotals' => $lines
                 ->mapWithKeys(fn (array $line): array => [
-                    $line['product']->getKey() => $pricing->lineTotal($line['product']->price, $line['quantity']),
+                    $line['product']->getKey() => $pricing->lineTotal($line['product']->effectivePrice(), $line['quantity']),
                 ])
                 ->all(),
             'problems' => $lines
@@ -36,8 +37,13 @@ class CartController extends Controller
 
     /**
      * Add a product to the guest session cart or the customer's cart.
+     *
+     * The quantity is the only value accepted from the browser; the price,
+     * availability and per-item cap are always read from the database. The
+     * response is JSON for the progressively enhanced product page and a
+     * normal redirect for the no-JavaScript fallback.
      */
-    public function store(Request $request, Product $product, CartService $carts): RedirectResponse
+    public function store(Request $request, Product $product, CartService $carts): RedirectResponse|JsonResponse
     {
         abort_unless($product->status === ProductStatus::Active, 404);
 
@@ -54,6 +60,13 @@ class CartController extends Controller
         ]);
 
         $carts->add($request->user(), $product, (int) $validated['quantity']);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Added to cart.',
+                'count' => $carts->count($request->user()),
+            ]);
+        }
 
         return back()->with('status', 'Added to cart.');
     }

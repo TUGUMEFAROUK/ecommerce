@@ -3,6 +3,15 @@
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+
+function categoryImagePngBytes(): string
+{
+    return base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    );
+}
 
 function adminCategoryPayload(array $overrides = []): array
 {
@@ -156,6 +165,98 @@ test('deleting a parent category detaches its child categories', function () {
         ->assertRedirect(route('admin.categories.index'));
 
     expect($child->refresh()->parent_id)->toBeNull();
+});
+
+test('an administrator can upload a category image', function () {
+    Storage::fake('public');
+
+    $this->actingAs(User::factory()->create(['role' => 'admin']))
+        ->post(route('admin.categories.store'), adminCategoryPayload([
+            'image_upload' => UploadedFile::fake()->createWithContent('textiles.png', categoryImagePngBytes()),
+        ]))
+        ->assertRedirect(route('admin.categories.index'));
+
+    $category = Category::query()->sole();
+
+    expect($category->image)->not->toBeNull()
+        ->and(str_starts_with((string) $category->image, 'categories/'))->toBeTrue();
+
+    Storage::disk('public')->assertExists($category->image);
+});
+
+test('an uploaded image replaces the previous category image', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('categories/old.png', 'old-image');
+
+    $category = Category::factory()->create(['image' => 'categories/old.png']);
+
+    $this->actingAs(User::factory()->create(['role' => 'admin']))
+        ->put(route('admin.categories.update', $category), adminCategoryPayload([
+            'name' => $category->name,
+            'slug' => $category->slug,
+            'image_upload' => UploadedFile::fake()->createWithContent('new.png', categoryImagePngBytes()),
+        ]))
+        ->assertRedirect(route('admin.categories.index'));
+
+    $category->refresh();
+
+    expect($category->image)->not->toBe('categories/old.png')
+        ->and(str_starts_with((string) $category->image, 'categories/'))->toBeTrue();
+
+    Storage::disk('public')->assertMissing('categories/old.png');
+    Storage::disk('public')->assertExists($category->image);
+});
+
+test('an administrator can remove a category image', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('categories/old.png', 'old-image');
+
+    $category = Category::factory()->create(['image' => 'categories/old.png']);
+
+    $this->actingAs(User::factory()->create(['role' => 'admin']))
+        ->put(route('admin.categories.update', $category), adminCategoryPayload([
+            'name' => $category->name,
+            'slug' => $category->slug,
+            'remove_image' => '1',
+        ]))
+        ->assertRedirect(route('admin.categories.index'));
+
+    expect($category->refresh()->image)->toBeNull();
+
+    Storage::disk('public')->assertMissing('categories/old.png');
+});
+
+test('an invalid category image is rejected', function () {
+    Storage::fake('public');
+
+    $this->actingAs(User::factory()->create(['role' => 'admin']))
+        ->post(route('admin.categories.store'), adminCategoryPayload([
+            'image_upload' => UploadedFile::fake()->create('notes.txt', 1, 'text/plain'),
+        ]))
+        ->assertInvalid(['image_upload']);
+
+    $this->assertDatabaseCount('categories', 0);
+});
+
+test('the category form renders the image upload and remove controls', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('categories/old.png', 'old-image');
+
+    $category = Category::factory()->create(['image' => 'categories/old.png']);
+
+    $admin = User::factory()->create(['role' => 'admin']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.categories.create'))
+        ->assertOk()
+        ->assertSee('name="image_upload"', false)
+        ->assertSee('enctype="multipart/form-data"', false);
+
+    $this->actingAs($admin)
+        ->get(route('admin.categories.edit', $category))
+        ->assertOk()
+        ->assertSee('name="image_upload"', false)
+        ->assertSee('name="remove_image"', false);
 });
 
 test('customers are denied access to every category management route', function (string $method, string $routeName) {

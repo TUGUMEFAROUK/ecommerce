@@ -32,7 +32,7 @@ class CartPricingService
         $subtotalCents = 0;
 
         foreach ($lines as $line) {
-            $subtotalCents += $this->lineTotalCents($line['product']->price, $line['quantity']);
+            $subtotalCents += $this->lineTotalCents($line['product']->effectivePrice(), $line['quantity']);
         }
 
         $flatShippingCents = $this->settings->shippingFlatFeeCents();

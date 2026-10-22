@@ -55,6 +55,8 @@ class AdminCategoryRequest extends FormRequest
                 Rule::notIn(self::RESERVED_SLUGS),
                 Rule::unique('categories', 'slug')->ignore($this->route('category')),
             ],
+            'image_upload' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'remove_image' => ['nullable', 'boolean'],
             'parent_id' => ['nullable', 'integer', $parentRule],
         ];
     }

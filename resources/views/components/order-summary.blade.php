@@ -1,37 +1,35 @@
 @props(['lines', 'quote', 'heading' => 'Order summary'])
 
-<div {{ $attributes->merge(['class' => 'rounded border border-gray-200 bg-white p-5']) }}>
-    <h2 class="text-lg font-semibold text-gray-900">{{ $heading }}</h2>
+<div {{ $attributes->merge(['class' => 'surface p-6 sm:p-7']) }}>
+    <h2 class="font-display text-2xl">{{ $heading }}</h2>
 
-    <p class="mt-1 text-sm text-gray-600">
-        {{ $lines->sum('quantity') }} item(s)
-    </p>
+    <p class="mt-1 text-sm text-charcoal/55">{{ $lines->sum('quantity') }} {{ Str::plural('item', $lines->sum('quantity')) }}</p>
 
-    <dl class="mt-4 space-y-2 text-sm">
-        <div class="flex justify-between">
-            <dt class="text-gray-600">Subtotal</dt>
-            <dd class="font-medium text-gray-900">${{ $quote['subtotal'] }}</dd>
+    <dl class="mt-6 space-y-3 text-sm">
+        <div class="flex items-center justify-between">
+            <dt class="text-charcoal/65">Subtotal</dt>
+            <dd class="text-charcoal">{{ \App\Support\Money::format($quote['subtotal_cents'] / 100) }}</dd>
         </div>
 
-        <div class="flex justify-between">
-            <dt class="text-gray-600">Shipping</dt>
-            <dd class="font-medium text-gray-900">
+        <div class="flex items-center justify-between">
+            <dt class="text-charcoal/65">Shipping</dt>
+            <dd class="text-charcoal">
                 @if ($quote['shipping_cents'] === 0)
                     Free
                 @else
-                    ${{ $quote['shipping'] }}
+                    {{ \App\Support\Money::format($quote['shipping_cents'] / 100) }}
                 @endif
             </dd>
         </div>
 
-        <div class="flex justify-between">
-            <dt class="text-gray-600">Discount</dt>
-            <dd class="font-medium text-gray-900">${{ $quote['discount'] }}</dd>
+        <div class="flex items-center justify-between">
+            <dt class="text-charcoal/65">Discount</dt>
+            <dd class="text-charcoal">{{ \App\Support\Money::format($quote['discount_cents'] / 100) }}</dd>
         </div>
 
-        <div class="flex justify-between border-t border-gray-200 pt-3 text-base font-semibold">
-            <dt>Total</dt>
-            <dd>${{ $quote['total'] }}</dd>
+        <div class="flex items-center justify-between border-t border-sand pt-4 text-base">
+            <dt class="font-display text-lg">Total</dt>
+            <dd class="font-medium">{{ \App\Support\Money::format($quote['total_cents'] / 100) }}</dd>
         </div>
     </dl>
 </div>

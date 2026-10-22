@@ -1,20 +1,21 @@
 <x-layouts.admin title="Products">
-    <x-admin.page-header title="Products">
-        <a
-            href="{{ route('admin.products.create') }}"
-            class="rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700"
-        >
+    <x-admin.page-header title="Products" description="Every product in the catalogue, with stock and status at a glance.">
+        <x-admin.button :href="route('admin.products.create')">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 5.25v13.5M5.25 12h13.5" stroke-linecap="round" />
+            </svg>
             New product
-        </a>
+        </x-admin.button>
     </x-admin.page-header>
 
     <form
         method="GET"
         action="{{ route('admin.products.index') }}"
-        class="mb-6 flex flex-wrap items-end gap-3 rounded border border-gray-200 bg-white p-4"
+        class="admin-card mb-6 flex flex-wrap items-end gap-3 p-4"
+        role="search"
     >
         <div class="min-w-48 flex-1">
-            <label for="filter-search" class="mb-1 block text-sm font-medium text-gray-700">Search</label>
+            <label for="filter-search" class="admin-label">Search</label>
             <input
                 id="filter-search"
                 type="search"
@@ -22,17 +23,13 @@
                 value="{{ request('search') }}"
                 maxlength="100"
                 placeholder="Name or SKU"
-                class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                class="admin-field"
             >
         </div>
 
         <div>
-            <label for="filter-status" class="mb-1 block text-sm font-medium text-gray-700">Status</label>
-            <select
-                id="filter-status"
-                name="status"
-                class="rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
-            >
+            <label for="filter-status" class="admin-label">Status</label>
+            <select id="filter-status" name="status" class="admin-field">
                 <option value="">All statuses</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}" @selected(request('status') === $status->value)>
@@ -43,12 +40,8 @@
         </div>
 
         <div>
-            <label for="filter-category" class="mb-1 block text-sm font-medium text-gray-700">Category</label>
-            <select
-                id="filter-category"
-                name="category"
-                class="rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
-            >
+            <label for="filter-category" class="admin-label">Category</label>
+            <select id="filter-category" name="category" class="admin-field">
                 <option value="">All categories</option>
                 @foreach ($categories as $category)
                     <option value="{{ $category->id }}" @selected((string) request('category') === (string) $category->id)>
@@ -58,66 +51,93 @@
             </select>
         </div>
 
-        <div class="flex gap-2">
-            <button type="submit" class="rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700">
-                Filter
-            </button>
-            <a href="{{ route('admin.products.index') }}" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                Reset
-            </a>
+        <div class="flex items-center gap-2">
+            <x-admin.button type="submit">Filter</x-admin.button>
+            <x-admin.button variant="secondary" :href="route('admin.products.index')">Reset</x-admin.button>
         </div>
     </form>
 
     @if ($products->isEmpty())
-        <x-empty-state
+        <x-admin.empty-state
             title="No products found"
             message="Nothing matches the current filters. Clear them or create a new product."
-        />
+        >
+            <x-admin.button :href="route('admin.products.create')">New product</x-admin.button>
+        </x-admin.empty-state>
     @else
-        <div class="overflow-x-auto rounded border border-gray-200 bg-white">
+        <div class="admin-table-wrap">
             <table class="w-full text-left text-sm">
-                <thead class="border-b border-gray-200 text-gray-600">
-                    <tr>
-                        <th class="px-4 py-3 font-medium">Product</th>
-                        <th class="px-4 py-3 font-medium">Category</th>
-                        <th class="px-4 py-3 font-medium">Price</th>
-                        <th class="px-4 py-3 font-medium">Stock</th>
-                        <th class="px-4 py-3 font-medium">Status</th>
-                        <th class="px-4 py-3 text-right font-medium">Actions</th>
+                <thead>
+                    <tr class="border-b border-slate-100">
+                        <th class="admin-th">Product</th>
+                        <th class="admin-th">Category</th>
+                        <th class="admin-th">Price</th>
+                        <th class="admin-th">Stock</th>
+                        <th class="admin-th">Status</th>
+                        <th class="admin-th text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($products as $product)
-                        <tr class="border-b border-gray-100 last:border-0">
-                            <td class="px-4 py-3">
-                                <a href="{{ route('admin.products.show', $product) }}" class="font-medium text-gray-900 hover:underline">
-                                    {{ $product->name }}
-                                </a>
-                                <p class="text-xs text-gray-500">{{ $product->sku }}</p>
+                        @php($primaryImage = $product->images->firstWhere('is_primary', true) ?? $product->images->first())
+                        <tr class="admin-row">
+                            <td class="admin-td">
+                                <div class="flex items-center gap-3">
+                                    <span class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                                        @if ($primaryImage)
+                                            <img
+                                                src="{{ Storage::disk('public')->url($primaryImage->path) }}"
+                                                alt=""
+                                                width="44"
+                                                height="44"
+                                                loading="lazy"
+                                                class="h-full w-full object-cover"
+                                            >
+                                        @else
+                                            <svg class="h-5 w-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                                <path d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9L12 21.75M3 7.5l9 5.25M3 7.5v9L12 21.75m0-9.5v9.5" stroke-linejoin="round" />
+                                            </svg>
+                                        @endif
+                                    </span>
+                                    <div class="min-w-0">
+                                        <a href="{{ route('admin.products.show', $product) }}" class="block truncate font-medium text-slate-900 hover:underline">
+                                            {{ $product->name }}
+                                        </a>
+                                        <p class="truncate text-xs text-slate-500">{{ $product->sku }}</p>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="px-4 py-3 text-gray-600">{{ $product->category?->name ?? '—' }}</td>
-                            <td class="px-4 py-3">{{ number_format((float) $product->price, 2) }}</td>
-                            <td class="px-4 py-3 {{ $product->stock_quantity === 0 ? 'font-semibold text-red-600' : '' }}">
-                                {{ $product->stock_quantity }}
+                            <td class="admin-td">{{ $product->category?->name ?? '—' }}</td>
+                            <td class="admin-td whitespace-nowrap">
+                                <span class="font-medium text-slate-900">{{ \App\Support\Money::formatWithCode($product->price) }}</span>
+                                @if ($product->sale_price !== null)
+                                    <span class="block text-xs text-slate-500 line-through">{{ \App\Support\Money::formatWithCode($product->sale_price) }}</span>
+                                @endif
                             </td>
-                            <td class="px-4 py-3">
-                                <span class="rounded-full px-2 py-0.5 text-xs font-medium
-                                    {{ match ($product->status->value) {
-                                        'active' => 'bg-green-100 text-green-800',
-                                        'draft' => 'bg-gray-100 text-gray-700',
-                                        default => 'bg-amber-100 text-amber-800',
-                                    } }}">
-                                    {{ Str::headline($product->status->value) }}
-                                </span>
+                            <td class="admin-td">
+                                @if ($product->stock_quantity === 0)
+                                    <x-admin.badge tone="rose">Out of stock</x-admin.badge>
+                                @else
+                                    <span class="font-medium text-slate-900">{{ $product->stock_quantity }}</span>
+                                @endif
                             </td>
-                            <td class="px-4 py-3 text-right">
-                                <div class="flex justify-end gap-3 text-sm">
-                                    <a href="{{ route('admin.products.show', $product) }}" class="text-gray-700 hover:text-gray-900 hover:underline">View</a>
-                                    <a href="{{ route('admin.products.edit', $product) }}" class="text-gray-700 hover:text-gray-900 hover:underline">Edit</a>
+                            <td class="admin-td">
+                                <x-admin.status-badge :status="$product->status" />
+                            </td>
+                            <td class="admin-td">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ route('admin.products.show', $product) }}" class="admin-btn admin-btn-secondary admin-btn-sm">View</a>
+                                    <a href="{{ route('admin.products.edit', $product) }}" class="admin-btn admin-btn-secondary admin-btn-sm">Edit</a>
+
                                     <form method="POST" action="{{ route('admin.products.destroy', $product) }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                                        <x-admin.confirm-button
+                                            variant="danger"
+                                            message="Delete {{ $product->name }}? This removes the product and its stored images."
+                                        >
+                                            Delete
+                                        </x-admin.confirm-button>
                                     </form>
                                 </div>
                             </td>
@@ -127,8 +147,6 @@
             </table>
         </div>
 
-        <div class="mt-4">
-            {{ $products->links() }}
-        </div>
+        {{ $products->links('components.admin.pagination') }}
     @endif
 </x-layouts.admin>

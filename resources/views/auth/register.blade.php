@@ -1,62 +1,81 @@
-<x-layouts.app title="Register">
-    <div class="mx-auto max-w-md rounded border border-gray-200 bg-white p-8">
-        <h1 class="mb-6 text-xl font-semibold">Register</h1>
+<x-layouts.shop title="Register">
+    <div class="shell flex min-h-[70vh] items-center justify-center py-14">
+        <div class="w-full max-w-md">
+            <p class="eyebrow text-center">Join us</p>
+            <h1 class="mt-3 text-center font-display text-4xl">Create an account</h1>
 
-        <form method="POST" action="{{ route('register') }}" class="flex flex-col gap-4">
-            @csrf
+            <div class="surface mt-8 p-7 sm:p-9">
+                <form method="POST" action="{{ route('register') }}" class="flex flex-col gap-5">
+                    @csrf
 
-            <div>
-                <label for="name" class="mb-1 block text-sm font-medium">Name</label>
-                <input
-                    id="name"
-                    type="text"
-                    name="name"
-                    value="{{ old('name') }}"
-                    required
-                    autofocus
-                    class="w-full rounded border border-gray-300 px-3 py-2"
-                >
+                    <div>
+                        <label for="name" class="field-label">Name</label>
+                        <input
+                            id="name"
+                            type="text"
+                            name="name"
+                            value="{{ old('name') }}"
+                            required
+                            autofocus
+                            autocomplete="name"
+                            class="field"
+                        >
+                        @error('name')
+                            <p class="mt-1 text-xs text-clay" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="email" class="field-label">Email</label>
+                        <input
+                            id="email"
+                            type="email"
+                            name="email"
+                            value="{{ old('email') }}"
+                            required
+                            autocomplete="email"
+                            class="field"
+                        >
+                        @error('email')
+                            <p class="mt-1 text-xs text-clay" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="password" class="field-label">Password</label>
+                        <input
+                            id="password"
+                            type="password"
+                            name="password"
+                            required
+                            autocomplete="new-password"
+                            class="field"
+                        >
+                        @error('password')
+                            <p class="mt-1 text-xs text-clay" role="alert">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="password_confirmation" class="field-label">Confirm password</label>
+                        <input
+                            id="password_confirmation"
+                            type="password"
+                            name="password_confirmation"
+                            required
+                            autocomplete="new-password"
+                            class="field"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-full">Create account</button>
+                </form>
             </div>
 
-            <div>
-                <label for="email" class="mb-1 block text-sm font-medium">Email</label>
-                <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    value="{{ old('email') }}"
-                    required
-                    class="w-full rounded border border-gray-300 px-3 py-2"
-                >
-            </div>
-
-            <div>
-                <label for="password" class="mb-1 block text-sm font-medium">Password</label>
-                <input
-                    id="password"
-                    type="password"
-                    name="password"
-                    required
-                    class="w-full rounded border border-gray-300 px-3 py-2"
-                >
-            </div>
-
-            <div>
-                <label for="password_confirmation" class="mb-1 block text-sm font-medium">Confirm password</label>
-                <input
-                    id="password_confirmation"
-                    type="password"
-                    name="password_confirmation"
-                    required
-                    class="w-full rounded border border-gray-300 px-3 py-2"
-                >
-            </div>
-
-            <div class="flex justify-end">
-                <button type="submit" class="rounded bg-gray-900 px-4 py-2 text-white hover:bg-gray-700">
-                    Register
-                </button>
-            </div>
-        </form>
+            <p class="mt-8 text-center text-sm text-charcoal/60">
+                Already have an account?
+                <a href="{{ route('login') }}" class="link-quiet">Log in</a>
+            </p>
+        </div>
     </div>
-</x-layouts.app>
+</x-layouts.shop>

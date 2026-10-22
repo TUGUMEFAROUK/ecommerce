@@ -22,7 +22,7 @@ class OrderController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Order::query()->with('user')->latest();
+        $query = Order::query()->with(['user', 'payments'])->latest();
 
         $search = trim((string) $request->query('search'));
 

@@ -71,3 +71,74 @@ test('the dashboard lists recent orders with their customer', function () {
         ->assertSee('#'.$order->id, false)
         ->assertSee('Ada Lovelace', false);
 });
+
+test('the sales series covers every day of the selected range', function () {
+    Order::factory()->paid()->create(['total' => 40.00]);
+
+    $series = app(StoreStatisticsService::class)->salesSeries(7);
+
+    expect($series)->toHaveCount(7)
+        ->and($series[0]['date'])->toBe(now()->subDays(6)->format('Y-m-d'))
+        ->and($series[6]['date'])->toBe(now()->format('Y-m-d'))
+        ->and(array_sum(array_column($series, 'total')))->toBe(40.00);
+});
+
+test('the sales series ignores orders that are not recognized sales', function () {
+    Order::factory()->paid()->create(['total' => 40.00]);
+    Order::factory()->create(['total' => 500.00]);
+    Order::factory()->cancelled()->create(['total' => 700.00]);
+
+    $series = app(StoreStatisticsService::class)->salesSeries(30);
+
+    expect(array_sum(array_column($series, 'total')))->toBe(40.00);
+});
+
+test('the dashboard chart range defaults to thirty days and ignores unknown ranges', function () {
+    Order::factory()->paid()->create(['total' => 40.00]);
+
+    $this->actingAs(User::factory()->create(['role' => UserRole::Admin]))
+        ->get(route('admin.dashboard', ['range' => 7]))
+        ->assertOk()
+        ->assertSee('in the last 7 days', false)
+        ->assertSee('30d', false);
+
+    $this->actingAs(User::factory()->create(['role' => UserRole::Admin]))
+        ->get(route('admin.dashboard', ['range' => 999]))
+        ->assertOk()
+        ->assertSee('in the last 30 days', false);
+});
+
+test('the dashboard lists the best selling products from recognized sales', function () {
+    $product = Product::factory()->create(['name' => 'Handwoven Throw']);
+
+    Order::factory()->paid()->create()->items()->create([
+        'product_id' => $product->getKey(),
+        'product_name' => $product->name,
+        'product_sku' => $product->sku,
+        'unit_price' => 25.00,
+        'quantity' => 4,
+        'line_total' => 100.00,
+    ]);
+
+    Order::factory()->create()->items()->create([
+        'product_id' => $product->getKey(),
+        'product_name' => $product->name,
+        'product_sku' => $product->sku,
+        'unit_price' => 25.00,
+        'quantity' => 9,
+        'line_total' => 225.00,
+    ]);
+
+    $top = app(StoreStatisticsService::class)->topSellingProducts();
+
+    expect($top)->toHaveCount(1)
+        ->and($top[0]['name'])->toBe('Handwoven Throw')
+        ->and($top[0]['units'])->toBe(4)
+        ->and($top[0]['revenue'])->toBe(100.00);
+
+    $this->actingAs(User::factory()->create(['role' => UserRole::Admin]))
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSee('Handwoven Throw', false)
+        ->assertSee('4 units sold', false);
+});

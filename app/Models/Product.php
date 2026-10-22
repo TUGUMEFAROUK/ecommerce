@@ -26,6 +26,7 @@ class Product extends Model
         'slug',
         'description',
         'price',
+        'sale_price',
         'sku',
         'stock_quantity',
         'status',
@@ -50,6 +51,7 @@ class Product extends Model
     {
         return [
             'price' => 'decimal:2',
+            'sale_price' => 'decimal:2',
             'stock_quantity' => 'integer',
             'status' => ProductStatus::class,
             'featured' => 'boolean',
@@ -87,6 +89,43 @@ class Product extends Model
     public function inStock(): bool
     {
         return $this->stock_quantity > 0;
+    }
+
+    /**
+     * Whether the product is currently discounted.
+     *
+     * A sale price only counts when it is genuinely lower than the list
+     * price, so a stale or higher sale price never mislabels a product.
+     */
+    public function isOnSale(): bool
+    {
+        return $this->sale_price !== null && (float) $this->sale_price < (float) $this->price;
+    }
+
+    /**
+     * The price a customer actually pays.
+     */
+    public function effectivePrice(): float
+    {
+        return $this->isOnSale() ? (float) $this->sale_price : (float) $this->price;
+    }
+
+    /**
+     * The discount off the list price, as a whole percentage.
+     */
+    public function discountPercentage(): int
+    {
+        if (! $this->isOnSale()) {
+            return 0;
+        }
+
+        $listPrice = (float) $this->price;
+
+        if ($listPrice <= 0) {
+            return 0;
+        }
+
+        return (int) round((($listPrice - $this->effectivePrice()) / $listPrice) * 100);
     }
 
     public function category(): BelongsTo

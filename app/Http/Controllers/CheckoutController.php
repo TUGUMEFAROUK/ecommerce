@@ -142,9 +142,9 @@ class CheckoutController extends Controller
                     'product_id' => $product->getKey(),
                     'product_name' => $product->name,
                     'product_sku' => $product->sku,
-                    'unit_price' => $product->price,
+                    'unit_price' => $product->effectivePrice(),
                     'quantity' => $line['quantity'],
-                    'line_total' => $pricing->lineTotal($product->price, $line['quantity']),
+                    'line_total' => $pricing->lineTotal($product->effectivePrice(), $line['quantity']),
                 ]);
 
                 $product->decrement('stock_quantity', $line['quantity']);

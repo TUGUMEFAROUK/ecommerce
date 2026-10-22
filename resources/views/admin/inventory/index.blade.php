@@ -1,50 +1,53 @@
 <x-layouts.admin title="Inventory">
-    <x-admin.page-header title="Inventory">
-        <a href="{{ route('admin.settings.edit') }}" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-            Threshold settings
-        </a>
+    <x-admin.page-header title="Inventory" description="Adjust stock levels and review the audit trail.">
+        <x-admin.button variant="secondary" :href="route('admin.settings.edit')">Threshold settings</x-admin.button>
     </x-admin.page-header>
 
-    <p class="mb-6 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        Showing active products with {{ $threshold }} {{ Str::plural('unit', $threshold) }} or less in stock
-        ({{ $products->total() }} {{ Str::plural('product', $products->total()) }}).
-        Adjustments below are recorded with an audit trail.
-    </p>
+    <div class="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+        <p>
+            Showing active products with {{ $threshold }} {{ Str::plural('unit', $threshold) }} or less in stock
+            ({{ $products->total() }} {{ Str::plural('product', $products->total()) }}).
+            Adjustments below are recorded with an audit trail.
+        </p>
+    </div>
 
     @if ($products->isEmpty())
-        <x-empty-state
+        <x-admin.empty-state
             title="Stock levels look healthy"
             message="No active product is at or below the low-stock threshold. Adjust the threshold in settings to widen or narrow this list."
         />
     @else
-        <div class="overflow-x-auto rounded border border-gray-200 bg-white">
+        <div class="admin-table-wrap">
             <table class="w-full text-left text-sm">
-                <thead class="border-b border-gray-200 text-gray-600">
-                    <tr>
-                        <th class="px-4 py-3 font-medium">Product</th>
-                        <th class="px-4 py-3 font-medium">SKU</th>
-                        <th class="px-4 py-3 font-medium">In stock</th>
-                        <th class="px-4 py-3 font-medium" colspan="3">Adjustment</th>
+                <thead>
+                    <tr class="border-b border-slate-100">
+                        <th class="admin-th">Product</th>
+                        <th class="admin-th">SKU</th>
+                        <th class="admin-th">In stock</th>
+                        <th class="admin-th">Adjustment</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($products as $product)
-                        <tr class="border-b border-gray-100 last:border-0">
-                            <td class="px-4 py-3">
-                                <a href="{{ route('admin.products.edit', $product) }}" class="font-medium text-gray-900 hover:underline">
+                        <tr class="admin-row">
+                            <td class="admin-td">
+                                <a href="{{ route('admin.products.edit', $product) }}" class="font-medium text-slate-900 hover:underline">
                                     {{ $product->name }}
                                 </a>
                             </td>
-                            <td class="px-4 py-3 text-gray-600">{{ $product->sku }}</td>
-                            <td class="px-4 py-3 font-semibold {{ $product->stock_quantity === 0 ? 'text-red-600' : 'text-amber-700' }}">
-                                {{ $product->stock_quantity }}
+                            <td class="admin-td">{{ $product->sku }}</td>
+                            <td class="admin-td">
+                                @if ($product->stock_quantity === 0)
+                                    <x-admin.badge tone="rose">{{ $product->stock_quantity }}</x-admin.badge>
+                                @else
+                                    <x-admin.badge tone="amber">{{ $product->stock_quantity }}</x-admin.badge>
+                                @endif
                             </td>
-
-                            <td class="px-4 py-3" colspan="3">
+                            <td class="admin-td">
                                 <form
                                     method="POST"
                                     action="{{ route('admin.inventory.update', $product) }}"
-                                    class="flex flex-wrap items-center gap-3"
+                                    class="flex flex-wrap items-center gap-2"
                                 >
                                     @csrf
                                     @method('PATCH')
@@ -60,7 +63,7 @@
                                             min="0"
                                             max="1000000"
                                             step="1"
-                                            class="w-28 rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                                            class="admin-field w-28"
                                         >
                                     </div>
 
@@ -73,13 +76,11 @@
                                             value=""
                                             maxlength="255"
                                             placeholder="Reason (optional)"
-                                            class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                                            class="admin-field"
                                         >
                                     </div>
 
-                                    <button type="submit" class="rounded bg-gray-900 px-3 py-2 text-xs text-white hover:bg-gray-700">
-                                        Save
-                                    </button>
+                                    <x-admin.button type="submit" size="sm">Save</x-admin.button>
                                 </form>
                             </td>
                         </tr>
@@ -88,40 +89,44 @@
             </table>
         </div>
 
-        <div class="mt-4">
-            {{ $products->links() }}
-        </div>
+        {{ $products->links('components.admin.pagination') }}
     @endif
 
-    <section class="mt-8 rounded border border-gray-200 bg-white p-6">
-        <h2 class="mb-4 text-lg font-semibold">Recent stock movements</h2>
+    <section class="admin-card mt-6">
+        <div class="border-b border-slate-100 px-5 py-4">
+            <h2 class="text-base font-semibold text-slate-900">Recent stock movements</h2>
+            <p class="text-sm text-slate-500">Every quantity change, with who made it and why.</p>
+        </div>
 
         @if ($movements->isEmpty())
-            <p class="text-sm text-gray-600">No stock movements have been recorded yet.</p>
+            <x-admin.empty-state
+                title="No stock movements yet"
+                message="Adjustments are recorded here as soon as a quantity changes."
+            />
         @else
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
-                    <thead class="border-b border-gray-200 text-gray-600">
-                        <tr>
-                            <th class="py-2 pr-4 font-medium">Date</th>
-                            <th class="py-2 pr-4 font-medium">Product</th>
-                            <th class="py-2 pr-4 text-right font-medium">Change</th>
-                            <th class="py-2 pr-4 text-right font-medium">After</th>
-                            <th class="py-2 pr-4 font-medium">By</th>
-                            <th class="py-2 font-medium">Reason</th>
+                    <thead>
+                        <tr class="border-b border-slate-100">
+                            <th class="admin-th">Date</th>
+                            <th class="admin-th">Product</th>
+                            <th class="admin-th text-right">Change</th>
+                            <th class="admin-th text-right">After</th>
+                            <th class="admin-th">By</th>
+                            <th class="admin-th">Reason</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($movements as $movement)
-                            <tr class="border-b border-gray-100 last:border-0">
-                                <td class="py-2 pr-4 text-gray-600">{{ $movement->created_at?->format('M j, Y H:i') }}</td>
-                                <td class="py-2 pr-4">{{ $movement->product?->name ?? '—' }}</td>
-                                <td class="py-2 pr-4 text-right font-medium {{ $movement->change < 0 ? 'text-red-600' : 'text-green-700' }}">
+                            <tr class="admin-row">
+                                <td class="admin-td whitespace-nowrap">{{ $movement->created_at?->format('M j, Y H:i') }}</td>
+                                <td class="admin-td">{{ $movement->product?->name ?? '—' }}</td>
+                                <td class="admin-td text-right font-medium {{ $movement->change < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
                                     {{ $movement->change > 0 ? '+' : '' }}{{ $movement->change }}
                                 </td>
-                                <td class="py-2 pr-4 text-right">{{ $movement->stock_after }}</td>
-                                <td class="py-2 pr-4 text-gray-600">{{ $movement->user?->name ?? '—' }}</td>
-                                <td class="py-2 text-gray-600">{{ $movement->reason ?? '—' }}</td>
+                                <td class="admin-td text-right">{{ $movement->stock_after }}</td>
+                                <td class="admin-td">{{ $movement->user?->name ?? '—' }}</td>
+                                <td class="admin-td">{{ $movement->reason ?? '—' }}</td>
                             </tr>
                         @endforeach
                     </tbody>

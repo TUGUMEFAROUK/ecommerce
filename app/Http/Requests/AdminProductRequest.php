@@ -50,7 +50,8 @@ class AdminProductRequest extends FormRequest
                 Rule::unique('products', 'slug')->ignore($this->route('product')),
             ],
             'description' => ['nullable', 'string', 'max:10000'],
-            'price' => ['required', 'numeric', 'min:0', 'max:999999.99'],
+            'price' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            'sale_price' => ['nullable', 'numeric', 'min:0', 'max:99999999.99', 'lt:price'],
             'sku' => [
                 'required',
                 'string',
@@ -60,6 +61,7 @@ class AdminProductRequest extends FormRequest
             'stock_quantity' => ['required', 'integer', 'min:0', 'max:1000000'],
             'status' => ['required', 'string', Rule::enum(ProductStatus::class)],
             'featured' => ['sometimes', 'boolean'],
+            'image_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 }

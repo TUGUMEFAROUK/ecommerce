@@ -6,6 +6,288 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Jost', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-display: 'Cormorant Garamond', ui-serif, Georgia, 'Times New Roman', serif;
+
+    --color-ivory: #F7F5F0;
+    --color-mist: #FBFAF7;
+    --color-charcoal: #20211F;
+    --color-olive: #68745B;
+    --color-sand: #E9E4DA;
+    --color-sand-deep: #D9D2C3;
+    --color-clay: #A2543A;
+
+    --tracking-eyebrow: 0.32em;
+
+    --shadow-soft: 0 18px 40px -32px rgb(32 33 31 / 0.55);
+    --shadow-lift: 0 30px 60px -42px rgb(32 33 31 / 0.65);
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        font-family: var(--font-sans);
+        background-color: var(--color-ivory);
+        color: var(--color-charcoal);
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-display);
+        font-weight: 500;
+        color: var(--color-charcoal);
+        letter-spacing: -0.01em;
+        line-height: 1.15;
+    }
+
+    ::selection {
+        background-color: var(--color-olive);
+        color: #FFFFFF;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-olive);
+        outline-offset: 3px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+@layer components {
+    /*
+     * The centered content shell used by every storefront section.
+     */
+    .shell {
+        @apply mx-auto w-full max-w-[84rem] px-5 sm:px-8 lg:px-12;
+    }
+
+    /*
+     * Small uppercase label that sits above a section heading.
+     */
+    .eyebrow {
+        @apply text-[0.6875rem] font-medium uppercase tracking-eyebrow text-olive;
+    }
+
+    /*
+     * Buttons share one height, one radius and one transition so every
+     * call to action on the site feels like the same control.
+     */
+    .btn {
+        @apply inline-flex h-11 items-center justify-center gap-2 rounded-sm border px-6 text-[0.6875rem] font-medium uppercase tracking-[0.18em] transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .btn-primary {
+        @apply border-charcoal bg-charcoal text-white hover:border-olive hover:bg-olive;
+    }
+
+    .btn-outline {
+        @apply border-charcoal bg-transparent text-charcoal hover:bg-charcoal hover:text-white;
+    }
+
+    .btn-invert {
+        @apply border-white bg-white text-charcoal hover:border-sand hover:bg-sand;
+    }
+
+    .btn-ghost {
+        @apply border-transparent bg-transparent text-charcoal hover:text-olive;
+    }
+
+    .btn-sm {
+        @apply h-9 px-4 text-[0.625rem];
+    }
+
+    /*
+     * Form controls.
+     */
+    .field {
+        @apply h-11 w-full rounded-sm border border-sand bg-white px-3.5 text-sm text-charcoal transition-colors duration-200 placeholder:text-charcoal/40 focus:border-olive;
+    }
+
+    .field-label {
+        @apply mb-1.5 block text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-charcoal/70;
+    }
+
+    /*
+     * A bordered panel used for cards, filters and summary boxes.
+     */
+    .surface {
+        @apply rounded-sm border border-sand bg-white;
+    }
+
+    /*
+     * Quiet inline link with an underline that grows on hover.
+     */
+    .link-quiet {
+        @apply text-charcoal underline decoration-charcoal/25 underline-offset-[6px] transition-colors duration-200 hover:text-olive hover:decoration-olive;
+    }
+
+    /*
+     * Expandable product information panel built on the native details
+     * element, so it is keyboard operable and works without JavaScript.
+     */
+    .disclosure {
+        @apply border-t border-sand;
+    }
+
+    .disclosure summary {
+        @apply flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-[0.6875rem] font-medium uppercase tracking-[0.18em] text-charcoal;
+    }
+
+    .disclosure summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .disclosure-icon {
+        @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-sand text-charcoal/60 transition-transform duration-200;
+    }
+
+    .disclosure[open] .disclosure-icon {
+        transform: rotate(45deg);
+    }
+
+    /*
+     * The quantity stepper hides the native number input arrows so the
+     * visible minus and plus controls are the only way to step the value.
+     */
+    .qty-stepper input[type='number'] {
+        appearance: textfield;
+        -moz-appearance: textfield;
+    }
+
+    .qty-stepper input[type='number']::-webkit-outer-spin-button,
+    .qty-stepper input[type='number']::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+}
+
+/*
+ * The admin panel runs on its own light, neutral surface. Dense management
+ * screens read better on white cards over a soft background than on the
+ * storefront palette, so the admin scopes its own typography and colours.
+ */
+@layer base {
+    body.admin-body {
+        font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        background-color: #F8FAFC;
+        color: #0F172A;
+    }
+
+    body.admin-body h1,
+    body.admin-body h2,
+    body.admin-body h3,
+    body.admin-body h4,
+    body.admin-body h5,
+    body.admin-body h6 {
+        font-family: inherit;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        color: inherit;
+    }
+}
+
+@layer components {
+    /*
+     * A panel used for every admin card, table and form section.
+     */
+    .admin-card {
+        @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+    }
+
+    /*
+     * Admin buttons share one height and radius so every call to action
+     * reads as the same control.
+     */
+    .admin-btn {
+        @apply inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-transparent px-4 text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .admin-btn-primary {
+        @apply border-slate-900 bg-slate-900 text-white hover:border-slate-800 hover:bg-slate-800;
+    }
+
+    .admin-btn-secondary {
+        @apply border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-900;
+    }
+
+    .admin-btn-danger {
+        @apply border-rose-600 bg-rose-600 text-white hover:border-rose-700;
+    }
+
+    .admin-btn-ghost {
+        @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+    }
+
+    .admin-btn-sm {
+        @apply h-9 px-3 text-[0.8125rem];
+    }
+
+    /*
+     * Form controls.
+     */
+    .admin-field {
+        @apply h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition-colors duration-150 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900;
+    }
+
+    .admin-textarea {
+        @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors duration-150 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900;
+    }
+
+    .admin-label {
+        @apply mb-1.5 block text-sm font-medium text-slate-700;
+    }
+
+    .admin-help {
+        @apply mt-1.5 text-xs text-slate-500;
+    }
+
+    .admin-error {
+        @apply mt-1.5 text-xs font-medium text-rose-600;
+    }
+
+    /*
+     * Status pill used for order, product and payment states.
+     */
+    .admin-badge {
+        @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+    }
+
+    /*
+     * Table primitives.
+     */
+    .admin-table-wrap {
+        @apply overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm;
+    }
+
+    .admin-th {
+        @apply whitespace-nowrap px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500;
+    }
+
+    .admin-td {
+        @apply px-5 py-3 align-middle text-sm text-slate-600;
+    }
+
+    .admin-row {
+        @apply border-t border-slate-100 transition-colors hover:bg-slate-50/70;
+    }
 }

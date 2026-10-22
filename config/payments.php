@@ -20,8 +20,12 @@ return [
         'base_url' => env('FLW_BASE_URL', 'https://api.flutterwave.com/v3'),
 
         // Currencies the hosted checkout may charge in. Must include the
-        // store's currency (USD) for the option to appear at checkout.
-        'currencies' => ['USD'],
+        // store's currency for the option to appear at checkout. Comma
+        // separated so a store can price in more than one currency.
+        'currencies' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('FLW_CURRENCIES', 'USD,UGX')),
+        ))),
     ],
 
 ];

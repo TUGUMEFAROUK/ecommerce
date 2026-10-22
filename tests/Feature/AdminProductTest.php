@@ -228,6 +228,58 @@ test('the product form rejects an uploaded svg', function () {
     $this->assertDatabaseCount('product_images', 0);
 });
 
+test('an administrator can set a sale price below the list price', function () {
+    $category = Category::factory()->create();
+
+    $this->actingAs(User::factory()->create(['role' => 'admin']))
+        ->post(route('admin.products.store'), adminProductPayload($category, [
+            'sale_price' => '19.99',
+        ]))
+        ->assertRedirect();
+
+    expect(Product::query()->sole()->sale_price)->toBe('19.99');
+});
+
+test('a sale price that is not below the list price is rejected', function () {
+    $category = Category::factory()->create();
+
+    $this->actingAs(User::factory()->create(['role' => 'admin']))
+        ->post(route('admin.products.store'), adminProductPayload($category, [
+            'sale_price' => '29.99',
+        ]))
+        ->assertInvalid(['sale_price']);
+
+    $this->assertDatabaseCount('products', 0);
+});
+
+test('an empty sale price on update clears the discount', function () {
+    $category = Category::factory()->create();
+
+    $product = Product::factory()->create([
+        'category_id' => $category->getKey(),
+        'price' => 29.99,
+        'sale_price' => 19.99,
+    ]);
+
+    $this->actingAs(User::factory()->create(['role' => 'admin']))
+        ->put(route('admin.products.update', $product), adminProductPayload($category, [
+            'sale_price' => '',
+        ]))
+        ->assertRedirect();
+
+    expect($product->refresh()->sale_price)->toBeNull();
+});
+
+test('the product form renders the sale price field', function () {
+    Category::factory()->create();
+
+    $this->actingAs(User::factory()->create(['role' => 'admin']))
+        ->get(route('admin.products.create'))
+        ->assertOk()
+        ->assertSee('name="sale_price"', false)
+        ->assertSee('Sale price', false);
+});
+
 test('customers are denied access to every product management route', function (string $method, string $routeName) {
     $category = Category::factory()->create();
     $product = Product::factory()->create(['category_id' => $category->getKey()]);

@@ -1,47 +1,55 @@
 <x-layouts.admin title="Categories">
-    <x-admin.page-header title="Categories">
-        <a
-            href="{{ route('admin.categories.create') }}"
-            class="rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700"
-        >
+    <x-admin.page-header title="Categories" description="Categories group products in the storefront navigation and catalog filters.">
+        <x-admin.button :href="route('admin.categories.create')">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 5.25v13.5M5.25 12h13.5" stroke-linecap="round" />
+            </svg>
             New category
-        </a>
+        </x-admin.button>
     </x-admin.page-header>
 
     @if ($categories->isEmpty())
-        <x-empty-state
+        <x-admin.empty-state
             title="No categories yet"
-            message="Categories group products in the storefront navigation and catalog filters."
-        />
+            message="Create a category to group products in the storefront navigation and catalog filters."
+        >
+            <x-admin.button :href="route('admin.categories.create')">New category</x-admin.button>
+        </x-admin.empty-state>
     @else
-        <div class="overflow-x-auto rounded border border-gray-200 bg-white">
+        <div class="admin-table-wrap">
             <table class="w-full text-left text-sm">
-                <thead class="border-b border-gray-200 text-gray-600">
-                    <tr>
-                        <th class="px-4 py-3 font-medium">Category</th>
-                        <th class="px-4 py-3 font-medium">Parent</th>
-                        <th class="px-4 py-3 font-medium">Products</th>
-                        <th class="px-4 py-3 font-medium">Subcategories</th>
-                        <th class="px-4 py-3 text-right font-medium">Actions</th>
+                <thead>
+                    <tr class="border-b border-slate-100">
+                        <th class="admin-th">Category</th>
+                        <th class="admin-th">Parent</th>
+                        <th class="admin-th">Products</th>
+                        <th class="admin-th">Subcategories</th>
+                        <th class="admin-th text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($categories as $category)
-                        <tr class="border-b border-gray-100 last:border-0">
-                            <td class="px-4 py-3">
-                                <span class="font-medium text-gray-900">{{ $category->name }}</span>
-                                <p class="text-xs text-gray-500">{{ $category->slug }}</p>
+                        <tr class="admin-row">
+                            <td class="admin-td">
+                                <span class="block font-medium text-slate-900">{{ $category->name }}</span>
+                                <span class="block text-xs text-slate-500">{{ $category->slug }}</span>
                             </td>
-                            <td class="px-4 py-3 text-gray-600">{{ $category->parent?->name ?? '—' }}</td>
-                            <td class="px-4 py-3">{{ $category->products_count }}</td>
-                            <td class="px-4 py-3">{{ $category->children_count }}</td>
-                            <td class="px-4 py-3 text-right">
-                                <div class="flex justify-end gap-3 text-sm">
-                                    <a href="{{ route('admin.categories.edit', $category) }}" class="text-gray-700 hover:text-gray-900 hover:underline">Edit</a>
+                            <td class="admin-td">{{ $category->parent?->name ?? '—' }}</td>
+                            <td class="admin-td">{{ number_format($category->products_count) }}</td>
+                            <td class="admin-td">{{ number_format($category->children_count) }}</td>
+                            <td class="admin-td">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ route('admin.categories.edit', $category) }}" class="admin-btn admin-btn-secondary admin-btn-sm">Edit</a>
+
                                     <form method="POST" action="{{ route('admin.categories.destroy', $category) }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                                        <x-admin.confirm-button
+                                            variant="danger"
+                                            message="Delete {{ $category->name }}? Products in this category must be moved first."
+                                        >
+                                            Delete
+                                        </x-admin.confirm-button>
                                     </form>
                                 </div>
                             </td>
@@ -51,8 +59,6 @@
             </table>
         </div>
 
-        <div class="mt-4">
-            {{ $categories->links() }}
-        </div>
+        {{ $categories->links('components.admin.pagination') }}
     @endif
 </x-layouts.admin>

@@ -1,22 +1,16 @@
 <x-layouts.admin title="New category">
-    <x-admin.page-header title="New category">
-        <a href="{{ route('admin.categories.index') }}" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-            Back to categories
-        </a>
+    <x-admin.page-header title="New category" description="Categories group products in the storefront navigation and catalog filters.">
+        <x-admin.button variant="secondary" :href="route('admin.categories.index')">Back to categories</x-admin.button>
     </x-admin.page-header>
 
-    <form method="POST" action="{{ route('admin.categories.store') }}">
+    <form method="POST" action="{{ route('admin.categories.store') }}" enctype="multipart/form-data">
         @csrf
 
         @include('admin.categories._form')
 
-        <div class="mt-6 flex gap-3">
-            <button type="submit" class="rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700">
-                Create category
-            </button>
-            <a href="{{ route('admin.categories.index') }}" class="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                Cancel
-            </a>
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+            <x-admin.button type="submit">Create category</x-admin.button>
+            <x-admin.button variant="secondary" :href="route('admin.categories.index')">Cancel</x-admin.button>
         </div>
     </form>
 </x-layouts.admin>

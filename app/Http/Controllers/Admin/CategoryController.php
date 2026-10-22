@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AdminCategoryRequest;
 use App\Models\Category;
 use App\Providers\AppServiceProvider;
+use App\Services\StoreImageService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -43,9 +45,14 @@ class CategoryController extends Controller
     /**
      * Persist a new category.
      */
-    public function store(AdminCategoryRequest $request): RedirectResponse
+    public function store(AdminCategoryRequest $request, StoreImageService $images): RedirectResponse
     {
-        $category = Category::create($request->validated());
+        $validated = $request->validated();
+
+        $category = Category::create([
+            ...Arr::except($validated, ['image_upload', 'remove_image']),
+            'image' => $images->resolve(null, $request->file('image_upload'), 'categories'),
+        ]);
 
         $this->forgetNavigationCache();
 
@@ -68,9 +75,21 @@ class CategoryController extends Controller
     /**
      * Update an existing category.
      */
-    public function update(AdminCategoryRequest $request, Category $category): RedirectResponse
+    public function update(AdminCategoryRequest $request, Category $category, StoreImageService $images): RedirectResponse
     {
-        $category->update($request->validated());
+        $validated = $request->validated();
+
+        $image = $images->resolve(
+            $category->image,
+            $request->file('image_upload'),
+            'categories',
+            $request->boolean('remove_image'),
+        );
+
+        $category->update([
+            ...Arr::except($validated, ['image_upload', 'remove_image']),
+            'image' => $image,
+        ]);
 
         $this->forgetNavigationCache();
 
@@ -87,7 +106,7 @@ class CategoryController extends Controller
      * instead of a database error. Child categories are detached by the
      * foreign key when the parent is removed.
      */
-    public function destroy(Category $category): RedirectResponse
+    public function destroy(Category $category, StoreImageService $images): RedirectResponse
     {
         if ($category->products()->exists()) {
             throw ValidationException::withMessages([
@@ -95,7 +114,11 @@ class CategoryController extends Controller
             ]);
         }
 
+        $image = $category->image;
+
         $category->delete();
+
+        $images->delete($image);
 
         $this->forgetNavigationCache();
 

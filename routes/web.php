@@ -18,11 +18,16 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PaymentWebhookController;
+use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::post('/newsletter', [NewsletterController::class, 'store'])
+    ->middleware('throttle:newsletter')
+    ->name('newsletter.subscribe');
 
 Route::post('webhooks/flutterwave', PaymentWebhookController::class)
     ->middleware('throttle:payments-webhook')
@@ -33,6 +38,8 @@ Route::get('/products/{product}', [ProductController::class, 'show'])->name('pro
 Route::post('/products/{product}/cart', [CartController::class, 'store'])
     ->middleware('throttle:cart')
     ->name('products.cart.add');
+
+Route::get('/policies/{policy}', [PolicyController::class, 'show'])->name('policies.show');
 
 Route::get('cart', [CartController::class, 'index'])->name('cart.index');
 Route::patch('cart/items/{product}', [CartController::class, 'update'])

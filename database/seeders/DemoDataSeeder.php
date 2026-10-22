@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\SettingsService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -220,7 +221,7 @@ class DemoDataSeeder extends Seeder
         $order = Order::query()->create([
             'user_id' => $customer->getKey(),
             'status' => OrderStatus::Paid,
-            'currency' => 'USD',
+            'currency' => strtoupper(app(SettingsService::class)->get('store_currency')) ?: 'USD',
             'total' => number_format(
                 collect($lines)->sum(fn (array $line): float => ((float) $line[0]->price) * $line[1]),
                 2,

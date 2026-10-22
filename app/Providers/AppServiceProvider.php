@@ -43,15 +43,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         ViewFactory::composer('components.partials.site-header', function (View $view): void {
-            $view->with('categories', Cache::remember(
-                self::NAVIGATION_CATEGORIES_CACHE_KEY,
-                self::NAVIGATION_CATEGORIES_TTL,
-                fn (): Collection => Category::query()
-                    ->whereNull('parent_id')
-                    ->orderBy('name')
-                    ->get(),
-            ));
+            $view->with('categories', $this->navigationCategories());
             $view->with('cartItemCount', app(CartService::class)->count(auth()->user()));
+        });
+
+        ViewFactory::composer('components.partials.site-footer', function (View $view): void {
+            $view->with('categories', $this->navigationCategories());
         });
 
         RateLimiter::for('login', function (Request $request): Limit {
@@ -76,5 +73,26 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('payments-webhook', function (): Limit {
             return Limit::perMinute(60)->by('payments-webhook');
         });
+
+        RateLimiter::for('newsletter', function (Request $request): Limit {
+            return Limit::perMinute(10)->by($request->ip());
+        });
+    }
+
+    /**
+     * The root categories shown in the storefront navigation and footer.
+     *
+     * @return Collection<int, Category>
+     */
+    public function navigationCategories(): Collection
+    {
+        return Cache::remember(
+            self::NAVIGATION_CATEGORIES_CACHE_KEY,
+            self::NAVIGATION_CATEGORIES_TTL,
+            fn (): Collection => Category::query()
+                ->whereNull('parent_id')
+                ->orderBy('name')
+                ->get(),
+        );
     }
 }

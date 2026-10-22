@@ -6,7 +6,9 @@ use App\Enums\ProductStatus;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -16,6 +18,23 @@ class ProductController extends Controller
      * The number of products shown per catalog page.
      */
     private const PER_PAGE = 12;
+
+    /**
+     * The number of related and recently viewed products shown on a product page.
+     */
+    private const SUGGESTION_LIMIT = 4;
+
+    /**
+     * The number of product ids kept in the recently viewed history.
+     */
+    private const HISTORY_LIMIT = 8;
+
+    /**
+     * Session key for the products a visitor has recently viewed.
+     *
+     * Only product identifiers are stored, never customer details.
+     */
+    private const HISTORY_SESSION_KEY = 'recently_viewed_products';
 
     /**
      * The whitelisted catalog sort orders.
@@ -62,16 +81,114 @@ class ProductController extends Controller
 
     /**
      * Display a single product in the storefront.
+     *
+     * The related rail and the recently viewed rail are both resolved from
+     * the database with their images and categories eager loaded, so the
+     * page costs a fixed number of queries regardless of how many products
+     * are suggested.
      */
-    public function show(Product $product): View
+    public function show(Request $request, Product $product): View
     {
         abort_unless($product->status === ProductStatus::Active, 404);
 
         $product->load(['images', 'category.parent']);
 
+        $recentlyViewed = $this->recentlyViewed($request, $product);
+
+        $this->rememberRecentlyViewed($request, $product);
+
         return view('product', [
             'product' => $product,
+            'relatedProducts' => $this->relatedProducts($product),
+            'recentlyViewed' => $recentlyViewed,
         ]);
+    }
+
+    /**
+     * Active products from the same category, preferring featured and
+     * well-stocked items.
+     *
+     * @return Collection<int, Product>
+     */
+    private function relatedProducts(Product $product): Collection
+    {
+        return Product::query()
+            ->active()
+            ->where('category_id', $product->category_id)
+            ->whereKeyNot($product->getKey())
+            ->with(['images', 'category'])
+            ->orderByDesc('featured')
+            ->orderByDesc('stock_quantity')
+            ->orderByDesc('id')
+            ->limit(self::SUGGESTION_LIMIT)
+            ->get();
+    }
+
+    /**
+     * The most recently viewed active products, excluding the current one.
+     *
+     * @return Collection<int, Product>
+     */
+    private function recentlyViewed(Request $request, Product $product): Collection
+    {
+        $ids = $this->recentlyViewedIds($request)
+            ->reject(fn (int $id): bool => $id === (int) $product->getKey())
+            ->take(self::SUGGESTION_LIMIT)
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return new Collection;
+        }
+
+        $products = Product::query()
+            ->active()
+            ->whereIn('id', $ids->all())
+            ->with(['images', 'category'])
+            ->get()
+            ->keyBy('id');
+
+        return new Collection(
+            $ids
+                ->map(fn (int $id): ?Product => $products->get($id))
+                ->filter()
+                ->values()
+                ->all()
+        );
+    }
+
+    /**
+     * Push the current product to the front of the visitor's history.
+     */
+    private function rememberRecentlyViewed(Request $request, Product $product): void
+    {
+        $ids = $this->recentlyViewedIds($request)
+            ->reject(fn (int $id): bool => $id === (int) $product->getKey())
+            ->prepend((int) $product->getKey())
+            ->take(self::HISTORY_LIMIT)
+            ->values()
+            ->all();
+
+        $request->session()->put(self::HISTORY_SESSION_KEY, $ids);
+    }
+
+    /**
+     * The product identifiers stored in the visitor's history.
+     *
+     * @return BaseCollection<int, int>
+     */
+    private function recentlyViewedIds(Request $request): BaseCollection
+    {
+        $stored = $request->session()->get(self::HISTORY_SESSION_KEY, []);
+
+        if (! is_array($stored)) {
+            return collect();
+        }
+
+        return collect($stored)
+            ->map(fn (mixed $id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values();
     }
 
     /**
